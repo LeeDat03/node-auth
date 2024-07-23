@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import http from "http";
 import dotenv from "dotenv";
 import app from "./app";
+import errorController from "./controllers/error-controller";
 
 // read .env file
 dotenv.config();
@@ -18,3 +19,6 @@ mongoose.connect(process.env.DATABASE_URL).then(() => {
 server.listen(process.env.PORT || 8005, () => {
   console.log(`Server is running on port ${process.env.PORT || 8005}`);
 });
+
+// handle error
+app.use(errorController);
