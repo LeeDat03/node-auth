@@ -7,7 +7,13 @@ import { loginValidator, signUpValidator } from "../lib/validators/auth";
 
 import User, { IUser } from "../models/user-model";
 import Account, { IAccount } from "../models/account-model";
-import { error } from "console";
+
+interface IJWTDecoded {
+  id: string;
+  name: string;
+  iat: number;
+  exp: number;
+}
 
 const comparePassword = async (passwordInput: string, password: string) => {
   const res = await bcrypt.compare(passwordInput, password);
@@ -175,6 +181,52 @@ export const logout = async (
       status: "success",
       message: "Logged out successfully",
     });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+// Protect route
+// because we are using jwt => each request will have a token in header (Bearer + token)
+// or we can check by cookie
+export const protect = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  try {
+    // get token
+    let token: string | undefined;
+
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
+    } else if (req.cookies && req.cookies["node-auth-jwt"]) {
+      token = req.cookies["node-auth-jwt"];
+    }
+
+    if (!token) {
+      return next({
+        error: "You are not logged in",
+        statusCode: 401,
+      });
+    }
+
+    // verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as IJWTDecoded;
+
+    const currentUser = await User.findById(decoded.id as string);
+    if (!currentUser) {
+      return next({
+        statusCode: 400,
+        error: "The user belonging to this token is no longer exists.",
+      });
+    }
+
+    // if everything ok => go to the next middleware
+    next();
   } catch (err) {
     return next(err);
   }
