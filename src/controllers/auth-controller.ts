@@ -7,6 +7,8 @@ import { loginValidator, signUpValidator } from "../lib/validators/auth";
 
 import User, { IUser } from "../models/user-model";
 import Account, { IAccount } from "../models/account-model";
+import axios from "axios";
+import { OAuthGithubRespone } from "../types/auth";
 
 interface IJWTDecoded {
   id: string;
@@ -186,6 +188,29 @@ export const logout = async (
   }
 };
 
+//////////////////////////////////////////////////////
+export const handleCallbackGithub = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  const requestToken = req.query.code;
+
+  try {
+    const tokenRespone = await axios({
+      method: "post",
+      url: `https://github.com/login/oauth/access_token?client_id=${process.env.GITHUB_CLIENT_ID}&client_secret=${process.env.GITHUB_CLIENT_SECRET}&code=${requestToken}`,
+      headers: {
+        Accept: "application/json",
+      },
+    });
+    const accessToken = (tokenRespone.data as OAuthGithubRespone).access_token;
+  } catch (err) {
+    next(err);
+  }
+};
+
+////////////////////////////////////////////////////////
 // Protect route
 // because we are using jwt => each request will have a token in header (Bearer + token)
 // or we can check by cookie
