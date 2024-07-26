@@ -63,7 +63,6 @@ export const handleCallbackGithub = async (
         url: "https://api.github.com/user/public_emails",
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          "X-GitHub-Api-Version": "2022-11-28",
         },
       }),
       axios({
@@ -71,7 +70,6 @@ export const handleCallbackGithub = async (
         url: "https://api.github.com/user",
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          "X-GitHub-Api-Version": "2022-11-28",
         },
       }),
     ]);
