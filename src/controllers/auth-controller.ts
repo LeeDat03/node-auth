@@ -7,8 +7,6 @@ import { loginValidator, signUpValidator } from "../lib/validators/auth";
 
 import User, { IUser } from "../models/user-model";
 import Account, { IAccount } from "../models/account-model";
-import axios from "axios";
-import { OAuthGithubRespone } from "../types/auth";
 
 interface IJWTDecoded {
   id: string;
@@ -75,7 +73,7 @@ export const signUp = async (
     if (existingAccount) {
       return res.status(400).json({
         success: false,
-        message: "Email already in use",
+        message: "Email already in use, please login",
       });
     }
 
@@ -141,11 +139,13 @@ export const login = async (
     // find the account
     const account = await Account.findOne({
       providerAccountId: email,
+      provider: "email",
     });
 
     if (!account) {
       return next({
-        error: "The account does not exist",
+        error:
+          "The account does not exist, please sign up or try other methods",
         statusCode: 401,
       });
     }
@@ -185,28 +185,6 @@ export const logout = async (
     });
   } catch (err) {
     return next(err);
-  }
-};
-
-//////////////////////////////////////////////////////
-export const handleCallbackGithub = async (
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
-) => {
-  const requestToken = req.query.code;
-
-  try {
-    const tokenRespone = await axios({
-      method: "post",
-      url: `https://github.com/login/oauth/access_token?client_id=${process.env.GITHUB_CLIENT_ID}&client_secret=${process.env.GITHUB_CLIENT_SECRET}&code=${requestToken}`,
-      headers: {
-        Accept: "application/json",
-      },
-    });
-    const accessToken = (tokenRespone.data as OAuthGithubRespone).access_token;
-  } catch (err) {
-    next(err);
   }
 };
 
