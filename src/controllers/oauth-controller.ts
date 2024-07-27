@@ -1,41 +1,18 @@
 import axios from "axios";
 import express from "express";
-import { getUserEmailGithub, getUserInfoGithub } from "../types/oauth";
+
+import {
+  getUserEmailGithub,
+  getUserInfoGithub,
+  getUserInfoGoogle,
+} from "../types/oauth";
+
 import Account from "../models/account-model";
 import User, { IUser } from "../models/user-model";
-import jwt from "jsonwebtoken";
 
-const signInToken = (user: IUser) => {
-  // create token
-  return jwt.sign({ id: user._id, name: user.name }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
-  });
-};
+import { createSendToken } from "./auth-controller";
 
-const createSendToken = (
-  user: IUser,
-  statusCode: number,
-  res: express.Response
-) => {
-  // generate token
-  const token = signInToken(user);
-
-  res.cookie("node-auth-jwt", token, {
-    expires: new Date(
-      Date.now() + +process.env.JWT_COOKIE_EXPIRES_IN * 24 * 3600 * 1000
-    ),
-    httpOnly: true,
-    // secure: true,
-  });
-
-  res.status(statusCode).json({
-    status: "success",
-    token,
-    data: {
-      user,
-    },
-  });
-};
+import { oauth2Client } from "../lib/oauth2-client";
 
 //////////////////////////////////////////////////////
 export const handleCallbackGithub = async (
@@ -107,6 +84,69 @@ export const handleCallbackGithub = async (
         provider: "github",
         providerAccountId: userEmail,
         accessToken: accessToken,
+        tokenType: "bearer",
+      });
+    }
+
+    return createSendToken(currUser, 200, res);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const handleCallbackGoogle = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  // get the code from the query gg return
+  const { code } = req.query;
+
+  if (!code) {
+    return next(new Error("No code provided"));
+  }
+
+  try {
+    // get the access token
+    const { tokens } = await oauth2Client.getToken(code as string);
+    oauth2Client.setCredentials(tokens);
+
+    // get user info
+    const userInfoResponse = await axios.get(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+      }
+    );
+    const userInfo: getUserInfoGoogle = userInfoResponse.data;
+
+    // check if user already exists
+    let currUser: IUser | null;
+
+    currUser = await User.findOne({
+      email: userInfo.email,
+    });
+
+    if (!currUser) {
+      currUser = await User.create({
+        email: userInfo.email,
+        name: userInfo.name,
+        image: userInfo.picture,
+      });
+    }
+
+    //
+    const currAccount = await Account.findOne({
+      providerAccountId: userInfo.email,
+      provider: "google",
+    });
+
+    if (!currAccount) {
+      await Account.create({
+        type: "oauth",
+        provider: "google",
+        providerAccountId: userInfo.email,
+        accessToken: tokens.access_token,
         tokenType: "bearer",
       });
     }

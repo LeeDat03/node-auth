@@ -27,7 +27,7 @@ const signInToken = (user: IUser) => {
   });
 };
 
-const createSendToken = (
+export const createSendToken = (
   user: IUser,
   statusCode: number,
   res: express.Response
