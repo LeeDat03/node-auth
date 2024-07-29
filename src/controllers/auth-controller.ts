@@ -27,7 +27,7 @@ const signInToken = (user: IUser) => {
   });
 };
 
-export const createSendToken = (
+export const sendToken = (
   user: IUser,
   statusCode: number,
   res: express.Response
@@ -43,13 +43,7 @@ export const createSendToken = (
     // secure: true,
   });
 
-  res.status(statusCode).json({
-    status: "success",
-    token,
-    data: {
-      user,
-    },
-  });
+  return token;
 };
 
 export const signUp = async (
@@ -62,7 +56,7 @@ export const signUp = async (
 
   try {
     // Get the user data from the request body
-    const { name, email, password, passwordConfirm } = signUpValidator.parse(
+    const { name, email, password, confirmPassword } = signUpValidator.parse(
       req.body
     );
 
@@ -72,7 +66,7 @@ export const signUp = async (
     });
     if (existingAccount) {
       return res.status(400).json({
-        success: false,
+        status: "fail",
         message: "Email already in use, please login",
       });
     }
@@ -107,9 +101,16 @@ export const signUp = async (
     session.endSession();
 
     // create token
+    const token = sendToken(user[0], 201, res);
 
     // send respone
-    return createSendToken(user[0], 201, res);
+    return res.status(201).json({
+      status: "success",
+      token,
+      data: {
+        user,
+      },
+    });
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
@@ -160,7 +161,15 @@ export const login = async (
       });
     }
 
-    return createSendToken(user, 200, res);
+    const token = sendToken(user, 200, res);
+
+    res.status(200).json({
+      status: "success",
+      token,
+      data: {
+        user,
+      },
+    });
   } catch (err) {
     return next(err);
   }

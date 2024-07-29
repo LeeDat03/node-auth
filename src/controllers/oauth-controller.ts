@@ -10,7 +10,7 @@ import {
 import Account from "../models/account-model";
 import User, { IUser } from "../models/user-model";
 
-import { createSendToken } from "./auth-controller";
+import { sendToken } from "./auth-controller";
 
 import { oauth2Client } from "../lib/oauth2-client";
 
@@ -88,7 +88,8 @@ export const handleCallbackGithub = async (
       });
     }
 
-    return createSendToken(currUser, 200, res);
+    const token = sendToken(currUser, 200, res);
+    res.redirect(process.env.CLIENT_URL);
   } catch (err) {
     next(err);
   }
@@ -151,7 +152,8 @@ export const handleCallbackGoogle = async (
       });
     }
 
-    return createSendToken(currUser, 200, res);
+    const token = sendToken(currUser, 200, res);
+    res.redirect(process.env.CLIENT_URL);
   } catch (err) {
     next(err);
   }

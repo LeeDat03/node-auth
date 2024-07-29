@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 
 import routesHandler from "./routers/index";
 import axios from "axios";
+import cors from "cors";
 
 const app = express();
 
@@ -10,6 +11,13 @@ app.use(express.static(`public`));
 
 // Read the request body
 app.use(bodyParser.json());
+
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+  })
+);
 
 // Handle the routes
 app.use("/api/v1", routesHandler());

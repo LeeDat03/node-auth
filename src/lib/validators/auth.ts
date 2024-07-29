@@ -7,13 +7,13 @@ export const signUpValidator = z
       message: "Please provide a valid email",
     }),
     password: z.string().min(8, "Password must be at least 8 characters"),
-    passwordConfirm: z
+    confirmPassword: z
       .string()
       .min(8, "Password confirm must be at least 8 characters"),
   })
-  .refine((data) => data.password === data.passwordConfirm, {
+  .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
-    path: ["passwordConfirm"],
+    path: ["confirmPassword"],
   });
 
 export const loginValidator = z.object({
