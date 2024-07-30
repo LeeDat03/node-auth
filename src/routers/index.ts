@@ -8,6 +8,7 @@ const router = express.Router();
 const routesHandler = (): express.Router => {
   auth(router);
   oAuth(router);
+  user(router);
 
   return router;
 };

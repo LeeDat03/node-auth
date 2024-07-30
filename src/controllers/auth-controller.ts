@@ -27,7 +27,7 @@ const signInToken = (user: IUser) => {
   });
 };
 
-export const sendToken = (
+const createSendToken = (
   user: IUser,
   statusCode: number,
   res: express.Response
@@ -43,7 +43,13 @@ export const sendToken = (
     // secure: true,
   });
 
-  return token;
+  res.status(statusCode).json({
+    status: "success",
+    token,
+    data: {
+      user,
+    },
+  });
 };
 
 export const signUp = async (
@@ -101,16 +107,7 @@ export const signUp = async (
     session.endSession();
 
     // create token
-    const token = sendToken(user[0], 201, res);
-
-    // send respone
-    return res.status(201).json({
-      status: "success",
-      token,
-      data: {
-        user,
-      },
-    });
+    createSendToken(user[0], 201, res);
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
@@ -161,15 +158,7 @@ export const login = async (
       });
     }
 
-    const token = sendToken(user, 200, res);
-
-    res.status(200).json({
-      status: "success",
-      token,
-      data: {
-        user,
-      },
-    });
+    createSendToken(user, 200, res);
   } catch (err) {
     return next(err);
   }
@@ -188,10 +177,7 @@ export const logout = async (
       httpOnly: true,
     });
 
-    res.status(200).json({
-      status: "success",
-      message: "Logged out successfully",
-    });
+    res.redirect(process.env.CLIENT_URL);
   } catch (err) {
     return next(err);
   }
@@ -238,8 +224,24 @@ export const protect = async (
     }
 
     // if everything ok => go to the next middleware
+    // @ts-ignore
+    req.user = currentUser;
     next();
   } catch (err) {
     return next(err);
   }
+};
+
+export const getAuthMe = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  return res.status(200).json({
+    status: "success",
+    data: {
+      // @ts-ignore
+      user: req.user,
+    },
+  });
 };

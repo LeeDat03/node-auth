@@ -1,5 +1,6 @@
 import axios from "axios";
 import express from "express";
+import jwt from "jsonwebtoken";
 
 import {
   getUserEmailGithub,
@@ -10,9 +11,29 @@ import {
 import Account from "../models/account-model";
 import User, { IUser } from "../models/user-model";
 
-import { sendToken } from "./auth-controller";
-
 import { oauth2Client } from "../lib/oauth2-client";
+
+const signInToken = (user: IUser) => {
+  // create token
+  return jwt.sign({ id: user._id, name: user.name }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
+  });
+};
+
+const sendToken = (user: IUser, statusCode: number, res: express.Response) => {
+  // generate token
+  const token = signInToken(user);
+
+  res.cookie("node-auth-jwt", token, {
+    expires: new Date(
+      Date.now() + +process.env.JWT_COOKIE_EXPIRES_IN * 24 * 3600 * 1000
+    ),
+    httpOnly: true,
+    // secure: true,
+  });
+
+  return token;
+};
 
 //////////////////////////////////////////////////////
 export const handleCallbackGithub = async (
